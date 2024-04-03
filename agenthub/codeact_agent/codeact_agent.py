@@ -16,6 +16,8 @@ from opendevin.observation import (
 )
 
 from opendevin.llm.llm import LLM
+from opendevin.speech.stt import STT
+from opendevin.speech.tts import TTS
 
 SYSTEM_MESSAGE = """You are a helpful assistant. You will be provided access (as root) to a bash shell to complete user-provided tasks.
 You will be able to execute commands in the bash shell, interact with the file system, install packages, and receive the output of your commands.
@@ -56,6 +58,8 @@ class CodeActAgent(Agent):
     def __init__(
         self,
         llm: LLM,
+        stt: STT, 
+        tts: TTS
     ) -> None:
         """
         Initializes a new instance of the CodeActAgent class.
@@ -64,7 +68,7 @@ class CodeActAgent(Agent):
         - instruction (str): The instruction for the agent to execute.
         - max_steps (int): The maximum number of steps to run the agent.
         """
-        super().__init__(llm)
+        super().__init__(llm, stt, tts)
         self.messages: List[Mapping[str, str]] = []
 
     def step(self, state: State) -> Action:

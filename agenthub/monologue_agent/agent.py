@@ -2,6 +2,8 @@ from typing import List
 from opendevin.agent import Agent
 from opendevin.state import State
 from opendevin.llm.llm import LLM
+from opendevin.speech.stt import STT
+from opendevin.speech.tts import TTS
 
 from opendevin.action import (
     Action,
@@ -79,8 +81,10 @@ INITIAL_THOUGHTS = [
 class MonologueAgent(Agent):
     _initialized = False
 
-    def __init__(self, llm: LLM):
+    def __init__(self, llm: LLM, stt: STT, tts: TTS):
         super().__init__(llm)
+        super().__init__(stt)
+        super().__init__(tts)
         self.monologue = Monologue()
         self.memory = LongTermMemory()
 

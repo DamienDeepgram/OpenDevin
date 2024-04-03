@@ -13,8 +13,13 @@ from opendevin.observation import NullObservation
 from opendevin.agent import Agent
 from opendevin.controller import AgentController
 from opendevin.llm.llm import LLM
+from opendevin.speech.stt import STT
+from opendevin.speech.tts import TTS
 from opendevin.observation import Observation, UserMessageObservation
 
+DEEPGRAM_API_KEY = config.get_or_none("DEEPGRAM_API_KEY")
+DEEPGRAM_STT_MODEL = config.get_or_none("DEEPGRAM_STT_MODEL")
+DEEPGRAM_TTS_MODEL = config.get_or_none("DEEPGRAM_TTS_MODEL")
 DEFAULT_API_KEY = config.get_or_none("LLM_API_KEY")
 DEFAULT_BASE_URL = config.get_or_none("LLM_BASE_URL")
 DEFAULT_WORKSPACE_DIR = config.get_or_default("WORKSPACE_DIR", os.path.join(os.getcwd(), "workspace"))
@@ -88,6 +93,10 @@ class Session:
                     await self.create_controller(data)
                 elif action == "start":
                     await self.start_task(data)
+                elif action == "speak":
+                    await self.speak(data)
+                elif action == "listen":
+                    await self.listen(data)
                 else:
                     if self.controller is None:
                         await self.send_error("No agent started. Please wait a second...")
@@ -120,6 +129,15 @@ class Session:
         api_key = DEFAULT_API_KEY
         if start_event and "api_key" in start_event["args"]:
             api_key = start_event["args"]["api_key"]
+        deepgram_tts_model = DEEPGRAM_TTS_MODEL
+        if start_event and "deepgram_tts_model" in start_event["args"]:
+            deepgram_tts_model = start_event["args"]["deepgram_tts_model"]
+        deepgram_stt_model = DEEPGRAM_STT_MODEL
+        if start_event and "deepgram_stt_model" in start_event["args"]:
+            deepgram_stt_model = start_event["args"]["deepgram_stt_model"]
+        deepgram_api_key = DEEPGRAM_API_KEY
+        if start_event and "deepgram_api_key" in start_event["args"]:
+            deepgram_api_key = start_event["args"]["deepgram_api_key"]
         api_base = DEFAULT_BASE_URL
         if start_event and "api_base" in start_event["args"]:
             api_base = start_event["args"]["api_base"]
@@ -134,8 +152,10 @@ class Session:
             os.makedirs(directory)
         directory = os.path.relpath(directory, os.getcwd())
         llm = LLM(model=model, api_key=api_key, base_url=api_base)
+        stt = STT(model=deepgram_stt_model, api_key=deepgram_api_key)
+        tts = STT(model=deepgram_tts_model, api_key=deepgram_api_key)
         AgentCls = Agent.get_cls(agent_cls)
-        self.agent = AgentCls(llm)
+        self.agent = AgentCls(llm, stt, tts)
         try:
             self.controller = AgentController(self.agent, workdir=directory, max_iterations=max_iterations, container_image=container_image, callbacks=[self.on_agent_event])
         except Exception:
@@ -175,3 +195,23 @@ class Session:
             return
         event_dict = event.to_dict()
         asyncio.create_task(self.send(event_dict), name="send event in callback")
+
+    def speak(self, event: Observation | Action):
+        """Speak text
+
+        Args:
+            text: The text to speak
+        """
+        event_dict = event.to_dict()
+        self.agent.speak(event_dict)
+        # asyncio.create_task(self.send(event_dict), name="send event in callback")
+
+    def listen(self, event: Observation | Action):
+        """Transcribe speech
+
+        Args:
+            audio: Audio to transcribe
+        """
+        event_dict = event.to_dict()
+        self.agent.listen(event_dict)
+        # asyncio.create_task(self.send(event_dict), name="send event in callback")

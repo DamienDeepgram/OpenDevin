@@ -5,6 +5,8 @@ if TYPE_CHECKING:
     from opendevin.action import Action
     from opendevin.state import State
 from opendevin.llm.llm import LLM
+from opendevin.speech.stt import STT
+from opendevin.speech.tts import TTS
 
 class Agent(ABC):
     """
@@ -19,8 +21,12 @@ class Agent(ABC):
     def __init__(
         self,
         llm: LLM,
+        stt: STT,
+        tts: TTS
     ):
         self.llm = llm
+        self.stt = stt
+        self.tts = tts
         self._complete = False
 
     @property
@@ -98,4 +104,30 @@ class Agent(ABC):
         if not bool(cls._registry):
             raise ValueError("No agent class registered.")
         return list(cls._registry.keys())
+    
+    @classmethod
+    def speak(self, text: str) -> bytes:
+        """
+        Speaks the text
+
+        Parameters:
+        - text (str): The text to speak
+
+        Returns:
+        - response (bytes): The response to the query.
+        """
+        self.tts.speak(text)
+
+    @classmethod
+    def listen(self, audio: bytes) -> str:
+        """
+        Transcribes the audio
+
+        Parameters:
+        - audio (str): The raw audio to transcribe
+
+        Returns:
+        - response (str): The response to the query.
+        """
+        self.tts.listen(audio)
         

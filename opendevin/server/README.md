@@ -76,6 +76,8 @@ This list may grow over time.
   * `query` - the query to search for
 * `think` - Allows the agent to make a plan, set a goal, or record thoughts
   * `thought` - the thought to record
+* `speak` - Speak the text
+* `listen` - Transcribe the audio
 * `finish` - agent signals that the task is completed
 
 ### Observations
